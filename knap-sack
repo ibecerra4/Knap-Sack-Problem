@@ -1,0 +1,117 @@
+'''
+Purpose of Program:
+    Implement different forms of algorithm design to the
+    0-1 knapsack problem. Used backtracking, greedy, randomized, and dynamic
+    algorithms to solve the same problem but slightly different in each occasion. Then compare
+    the different running times of each with different weights, values, and capacities. 
+'''
+import numpy as np
+import time
+import math
+
+def KSBacktracking(weights,values,length, max_weight):
+     #if capacity is 0 or there are o values, return 0
+    if max_weight == 0 or length == 0:
+        return 0
+    #if lists are not same size
+    if len(weights) != len(values): 
+        return 0
+     #if weights at index-1 
+    if weights[length-1] > max_weight: 
+        #recursively call but with one less index to decrease length of values list
+        return KSBacktracking(weights,values,length-1, max_weight) 
+    else:
+        #otherwise, take the maximum of either recursive call 
+        return max(values[length-1] + KSBacktracking(weights, values, length-1, max_weight-weights[length-1]), KSBacktracking(weights, values,length-1, max_weight)) #finally if it is not the case, it returns the max item
+
+
+def KSGreedy(weights, values, length, max_weight):
+    ind = [i for i in range(length)]
+    #fractions of values to weights
+    ratio = [v/w for v, w in zip(values, weights)]
+    #sort index according to the value and the weight in decreasing order
+    
+    ind.sort(key = lambda i:ratio[i], reverse = True)
+    #maximum value of items with total weight that is not more than the maximum weight 
+    max_val = 0
+    #List to get fractions from value i 
+    fractions = [0] *len(values)
+    #choose item from ind that has max value to the weight ratio list
+    for i in ind:
+        #if knapsack can fit all of weight of i, then add entire item
+        if weights[i]<= max_weight:
+            fractions[i] = 1
+            max_val += values[i]
+            max_weight -= weights[i]
+        #otherwise, add fraction of item and update max val
+        else:
+            fractions[i] = max_weight/weights[i]
+            max_val += values[i]*max_weight/weights[i]
+            break
+    return max_val, fractions
+
+def KSRandom(max_weight, numitems, tries=30):
+    max_val, pos = -math.inf, 0
+    perm, sack = [], []
+    for i in range(tries):
+        #create random prem
+        weights = np.random.permutation(numitems) 
+        values = np.random.permutation(numitems)
+        #store perm to return one with highest load
+        perm.append(values)
+        #use KSBacktracking to find highest load
+        sack.append(KSBacktracking(weights,values,len(values), max_weight)) 
+    #iterate for index of max_val and store max value in there
+    for i in range(len(sack)): 
+        if sack[i] > max_val: 
+            max_val, pos = sack[i], i
+    #search for permutation with highest load
+    for j in range(len(perm)):  
+        if j == pos:
+            #return highest load and permutation
+            return max_val, perm[j]
+
+
+def KSDynamic(weights, values, length, max_weight):
+    #list to store maximum value at i with max_weight i
+    max_values = [0 for i in range(max_weight+1)]
+    #fill in list
+    for i in range(max_weight+1):
+        for j in range(length):
+            if weights[j] <= i:
+                max_values[i] = max(max_values[i], max_values[i-weights[j]]+ values[j])
+    #return max value in list at capacity
+    return max_values[max_weight]
+
+
+values = [60, 100, 120, 5, 40, 80]
+weights = [10, 20, 30, 2, 60, 4]
+capacity = 10
+print("values = ", values," \nweights = ",weights," \ncapacity =", capacity)
+print()
+
+start_time = time.time()
+highest_load = KSBacktracking(weights, values, len(values), capacity)
+print("BackTracking")
+print("Highest Load: ", highest_load)
+print("It took ", time.time() - start_time, " seconds")
+
+print()
+print("Greedy Algoritm Fractional")
+start_time = time.time()
+highest_load2 , fractions = KSGreedy(weights, values,len(values), capacity)
+print("Highest Load: " , highest_load2, " with fractions: ", fractions)
+print("It took ", time.time() - start_time, " seconds")
+
+print()
+print("Random")
+start_time = time.time()
+highest_load3, perm = KSRandom(capacity, 6)
+print("Highest Load: " , highest_load3, " from the permutation ", perm)
+print("It took ", time.time() - start_time, " seconds")
+
+print()
+print("Dynamic Programming")
+start_time = time.time()
+print("Highest Load: ", KSDynamic(weights, values, len(values), capacity))
+print("It took ", time.time() - start_time, " seconds")
